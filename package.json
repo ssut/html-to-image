@@ -34,10 +34,10 @@
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/bubkoo/html-to-image.git"
+    "url": "git+https://github.com/reviewr/html-to-image.git"
   },
   "bugs": {
-    "url": "https://github.com/bubkoo/html-to-image/issues"
+    "url": "https://github.com/reviewr/html-to-image/issues"
   },
   "config": {
     "commitizen": {
