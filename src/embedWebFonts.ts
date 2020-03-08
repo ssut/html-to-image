@@ -42,14 +42,20 @@ function parseCSS(source:string) {
 }
 
 function fetchCSS(url: string, sheet: StyleSheet): Promise<any> {
-  return fetch(url).then((res: Response) => {
-    return {
-      url,
-      cssText:res.text(),
-    }
-  },                     (e) => {
-    console.log('ERROR FETCHING CSS: ', e.toString())
-  })
+  return fetch(url, {
+    mode: 'no-cors',
+    headers: {
+      'Access-Control-Allow-Origin': '*',
+      'sec-fetch-mode': 'no-cors',
+      mode: 'no-cors',
+    }}).then((res: Response) => {
+      return {
+        url,
+        cssText:res.text(),
+      }
+    },       (e) => {
+      console.log('RVWR - ERROR FETCHING CSS: ', e.toString())
+    })
 }
 
 function embedFonts(data: any): Promise<string> {
