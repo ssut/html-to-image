@@ -1,0 +1,47 @@
+defaults: &defaults
+  working_directory: ~/repo
+  docker:
+    - image: circleci/node:8.16
+
+version: 2
+
+jobs:
+  tests:
+    <<: *defaults
+
+    steps:
+      - checkout
+      - run: echo "//registry.npmjs.org/:_authToken=$NPM_TOKEN" >> ~/.npmrc
+      - run: sudo apt install rsync
+      - run: yarn install
+      - run: yarn run tests
+
+  deploy: 
+    <<: *defaults
+
+    steps:
+      - add_ssh_keys:
+          fingerprints:
+            - "36:19:ee:d9:ac:1c:27:31:06:45:70:07:a9:14:82:9c"
+      - checkout
+      - run: echo "//registry.npmjs.org/:_authToken=$NPM_TOKEN" >> ~/.npmrc
+      - run: sudo apt install rsync
+      - run: yarn install
+      - run: yarn run semantic-release
+
+workflows:
+  version: 2
+  build_and_deploy:
+    jobs:
+        
+      - tests:
+          filters:
+              branches:
+                  ignore:
+                      - master
+      
+      - deploy:
+          filters:
+              branches:
+                  only:
+                      - master

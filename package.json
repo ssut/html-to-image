@@ -1,6 +1,6 @@
 {
   "name": "@reviewr/html-to-image",
-  "version": "0.1.2",
+  "version": "0.0.0-semantic-release",
   "description": "Generates an image from a DOM node using HTML5 canvas.",
   "main": "lib/index.js",
   "types": "lib/index.d.ts",
@@ -39,15 +39,23 @@
   "bugs": {
     "url": "https://github.com/bubkoo/html-to-image/issues"
   },
+  "config": {
+    "commitizen": {
+      "path": "./node_modules/cz-conventional-changelog"
+    }
+  },
   "homepage": "https://github.com/bubkoo/html-to-image#readme",
   "devDependencies": {
     "husky": "^0.14.3",
     "tslint": "^5.11.0",
     "tslint-config-airbnb": "^5.11.0",
     "rimraf": "^2.6.2",
-    "typescript": "^3.0.3"
+    "typescript": "^3.0.3",
+    "semantic-release": "^15.5.0"
   },
   "scripts": {
+    "tests": "nyc --reporter=text mocha test --recursive",
+    "semantic-release": "semantic-release",
     "lint": "tslint ./src/*.ts -c tslint.json -p tsconfig.json --fix",
     "clean": "rimraf lib",
     "build": "tsc",
