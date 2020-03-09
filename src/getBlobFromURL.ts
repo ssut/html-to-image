@@ -45,11 +45,9 @@ export default function getBlobFromURL(
 
   const deferred = window.fetch
     ? window.fetch(url, {
-      mode: 'no-cors',
       headers: {
         'Access-Control-Allow-Origin': '*',
         'sec-fetch-mode': 'no-cors',
-        mode: 'no-cors',
       }})
       .then(response => response.blob())
       .then(blob => new Promise((resolve, reject) => {
