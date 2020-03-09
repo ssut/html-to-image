@@ -44,7 +44,6 @@ export default function getBlobFromURL(
   }
 
   const deferred = window.fetch
-    // fetch
     ? window.fetch(url, {
       mode: 'no-cors',
       headers: {
