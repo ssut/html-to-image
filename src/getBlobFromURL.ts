@@ -44,9 +44,7 @@ export default function getBlobFromURL(
   }
 
   const deferred = window.fetch
-    ? window.fetch(url, {
-      mode: 'no-cors',
-    })
+    ? window.fetch(`${url}?v1=1`)
       .then(response => response.blob())
       .then(blob => new Promise((resolve, reject) => {
         const reader = new FileReader()

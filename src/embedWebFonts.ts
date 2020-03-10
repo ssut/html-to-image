@@ -70,9 +70,7 @@ function embedFonts(data: any): Promise<string> {
         url = new URL(url, source).href
       }
       return new Promise((resolve, reject) => {
-        fetch(url, {
-          mode: 'no-cors',
-        })
+        fetch(`${url}?v1=1`)
           .then((res: Response) => res.blob())
           .then((blob) => {
             const reader = new FileReader()
