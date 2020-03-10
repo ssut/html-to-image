@@ -42,13 +42,7 @@ function parseCSS(source:string) {
 }
 
 function fetchCSS(url: string, sheet: StyleSheet): Promise<any> {
-  return fetch(url, {
-    mode: 'no-cors',
-    headers: {
-      'Access-Control-Allow-Origin': '*',
-      'sec-fetch-mode': 'no-cors',
-      mode: 'no-cors',
-    }}).then((res: Response) => {
+  return fetch(`${url}?v1=1`).then((res: Response) => {
       return {
         url,
         cssText:res.text(),
