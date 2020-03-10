@@ -43,13 +43,13 @@ function parseCSS(source:string) {
 
 function fetchCSS(url: string, sheet: StyleSheet): Promise<any> {
   return fetch(`${url}?v1=1`).then((res: Response) => {
-      return {
-        url,
-        cssText:res.text(),
-      }
-    },       (e) => {
-      console.log('RVWR - ERROR FETCHING CSS: ', e.toString())
-    })
+    return {
+      url,
+      cssText:res.text(),
+    }
+  },                               (e) => {
+    console.log('RVWR - ERROR FETCHING CSS: ', e.toString())
+  })
 }
 
 function embedFonts(data: any): Promise<string> {
