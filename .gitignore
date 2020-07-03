@@ -5,5 +5,5 @@
 npm-debug.log
 node_modules
 /dist
-/lib
+# /lib
 /test/coverage
