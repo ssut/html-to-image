@@ -53,7 +53,6 @@
     "clean": "rimraf lib",
     "build": "tsc",
     "prebuild": "npm run lint",
-    "prepublish": "npm run build",
     "precommit": "npm run lint"
   }
 }
