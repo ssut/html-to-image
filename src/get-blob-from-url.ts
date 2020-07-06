@@ -10,7 +10,7 @@ import { OptionsType } from './index';
 
 export default async function getBlobFromURL(
   url: string,
-  options: OptionsType
+  options: OptionsType,
 ): Promise<string | null> {
   // cache bypass so we dont have CORS issues with cached images
   // ref: https://developer.mozilla.org/en/docs/Web/API/XMLHttpRequest/Using_XMLHttpRequest#Bypassing_the_cache
@@ -58,7 +58,7 @@ export default async function getBlobFromURL(
       reader.addEventListener(
         'load',
         () => resolve(reader.result as string),
-        false
+        false,
       );
 
       reader.readAsDataURL(blob);

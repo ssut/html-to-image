@@ -21,4 +21,4 @@ export default function applyStyleWithOptions(
   }
 
   return clonedNode;
-};
+}
