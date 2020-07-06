@@ -1,36 +1,36 @@
 import { createImage, toArray, svgToDataURL } from './utils';
 import clonePseudoElements from './clone-pseudo-elements';
 
-function cloneSingleNode(
-  nativeNode: HTMLCanvasElement | SVGElement | HTMLElement
-): Promise<HTMLElement> {
+async function cloneSingleNode(
+  nativeNode: HTMLCanvasElement | SVGElement | HTMLElement,
+) {
   if (nativeNode instanceof HTMLCanvasElement) {
     const dataURL = nativeNode.toDataURL();
 
     if (dataURL === 'data:,') {
-      return Promise.resolve(nativeNode.cloneNode(false) as HTMLElement);
+      return nativeNode.cloneNode(false) as HTMLElement;
     }
 
     return createImage(dataURL);
   }
 
   if (nativeNode.tagName && nativeNode.tagName.toLowerCase() === 'svg') {
-    return Promise.resolve(nativeNode as SVGElement)
-      .then((svg) => svgToDataURL(svg))
-      .then(createImage);
+    const svg = nativeNode as SVGElement;
+    const svgDataUrl = await svgToDataURL(svg);
+    return createImage(svgDataUrl);
   }
 
-  return Promise.resolve(nativeNode.cloneNode(false) as HTMLElement);
+  return nativeNode.cloneNode(false) as HTMLElement;
 }
 
-function cloneChildren(
+async function cloneChildren(
   nativeNode: HTMLElement,
   clonedNode: HTMLElement,
-  filter?: Function
-): Promise<HTMLElement> {
+  filter?: Function,
+) {
   const children = toArray<HTMLElement>(nativeNode.childNodes);
   if (children.length === 0) {
-    return Promise.resolve(clonedNode);
+    return clonedNode;
   }
 
   // clone children in order
@@ -44,7 +44,7 @@ function cloneChildren(
               clonedNode.appendChild(clonedChild);
             }
           }),
-      Promise.resolve()
+      Promise.resolve(),
     )
     .then(() => clonedNode);
 }
@@ -60,7 +60,7 @@ function cloneCssStyle(nativeNode: HTMLElement, clonedNode: HTMLElement) {
       target.setProperty(
         name,
         source.getPropertyValue(name),
-        source.getPropertyPriority(name)
+        source.getPropertyPriority(name),
       );
     });
   }
@@ -76,32 +76,33 @@ function cloneInputValue(nativeNode: HTMLElement, clonedNode: HTMLElement) {
   }
 }
 
-function decorate(
+async function decorate(
   nativeNode: HTMLElement,
-  clonedNode: HTMLElement
-): Promise<HTMLElement> {
+  clonedNode: HTMLElement,
+) {
   if (!(clonedNode instanceof Element)) {
     return clonedNode;
   }
 
-  return Promise.resolve()
-    .then(() => cloneCssStyle(nativeNode, clonedNode))
-    .then(() => clonePseudoElements(nativeNode, clonedNode))
-    .then(() => cloneInputValue(nativeNode, clonedNode))
-    .then(() => clonedNode);
+  await cloneCssStyle(nativeNode, clonedNode);
+  await clonePseudoElements(nativeNode, clonedNode);
+  await cloneInputValue(nativeNode, clonedNode);
+
+  return clonedNode;
 }
 
-export default function cloneNode(
+export default async function cloneNode(
   domNode: HTMLElement,
   filter?: Function,
-  isRoot?: boolean
-): Promise<HTMLElement | null> {
+  isRoot?: boolean,
+) {
   if (!isRoot && filter && !filter(domNode)) {
-    return Promise.resolve(null);
+    return null;
   }
 
-  return Promise.resolve(domNode)
-    .then(cloneSingleNode)
-    .then((clonedNode) => cloneChildren(domNode, clonedNode, filter))
-    .then((clonedNode) => decorate(domNode, clonedNode));
+  let cloned = await cloneSingleNode(domNode);
+  cloned = await cloneChildren(domNode, cloned, filter);
+  cloned = await decorate(domNode, cloned);
+
+  return cloned;
 }
