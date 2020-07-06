@@ -3,32 +3,30 @@ import getBlobFromURL from './get-blob-from-url';
 import embedResources from './embed-resources';
 import { OptionsType } from './index';
 
-function embedBackground(
+async function embedBackground(
   clonedNode: HTMLElement,
-  options: OptionsType
-): Promise<HTMLElement> {
+  options: OptionsType,
+) {
   const background = clonedNode.style.getPropertyValue('background');
   if (!background) {
-    return Promise.resolve(clonedNode);
+    return clonedNode;
   }
 
-  return Promise.resolve(background)
-    .then((cssString) => embedResources(cssString, null, options))
-    .then((cssString) => {
-      clonedNode.style.setProperty(
-        'background',
-        cssString,
-        clonedNode.style.getPropertyPriority('background')
-      );
+  const cssString = await embedResources(background, null, options);
 
-      return clonedNode;
-    });
+  clonedNode.style.setProperty(
+    'background',
+    cssString,
+    clonedNode.style.getPropertyPriority('background'),
+  );
+
+  return clonedNode;
 }
 
 async function embedImageNode(
   clonedNode: HTMLElement,
-  options: OptionsType
-): Promise<HTMLElement> {
+  options: OptionsType,
+) {
   if (!(clonedNode instanceof HTMLImageElement) || isDataUrl(clonedNode.src)) {
     return clonedNode;
   }
@@ -46,40 +44,22 @@ async function embedImageNode(
   return node;
 }
 
-const a = {
-  total: 0,
-  count: 0,
-};
-
 async function embedChildren(
   clonedNode: HTMLElement,
-  options: Object
-): Promise<HTMLElement> {
+  options: Object,
+) {
   const children = toArray<HTMLElement>(clonedNode.childNodes);
 
-  // let resp: any;
-  // for (const a of children) {
-  //   console.info(a);
-  //   await embedImages(a, options);
-  //   console.info(a, 'DONE');
-  // }
-
   const deferreds = children.map((child) => embedImages(child, options));
-
-  // a.total += 1
-  // console.info(a.count, a.total)
   const resp = await Promise.all(deferreds).then(() => clonedNode);
-  // a.count += 1
-
-  console.info(a.count, a.total);
 
   return resp;
 }
 
 export default async function embedImages(
   clonedNode: HTMLElement,
-  options: Object
-): Promise<HTMLElement> {
+  options: Object,
+) {
   if (!(clonedNode instanceof Element)) {
     return clonedNode;
   }

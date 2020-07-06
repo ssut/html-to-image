@@ -100,14 +100,8 @@ export function canvasToBlob(canvas: HTMLCanvasElement): Promise<Blob | null> {
   return toBlob(canvas);
 }
 
-export function toArray<T>(arrayLike: any): T[] {
-  const arr: T[] = [];
-
-  for (let i = 0, l = arrayLike.length; i < l; i += 1) {
-    arr.push(arrayLike[i]);
-  }
-
-  return arr;
+export function toArray<T>(arrayLike: ArrayLike<T> | NodeListOf<any> | T[]): T[] {
+  return Array.from<T>(arrayLike);
 }
 
 function px(node: HTMLElement, styleProperty: string): number {

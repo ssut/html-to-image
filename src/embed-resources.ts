@@ -4,7 +4,7 @@ import { OptionsType } from './index';
 
 const URL_REGEX = /url\((['"]?)([^'"]+?)\1\)/g;
 
-function resolveUrl(url: string, baseUrl: string | null): string {
+function resolveUrl(url: string, baseUrl: string | null) {
   // url is absolute already
   if (url.match(/^[a-z]+:\/\//i)) {
     return url;
@@ -36,15 +36,15 @@ function resolveUrl(url: string, baseUrl: string | null): string {
   return a.href;
 }
 
-function escape(url: string): string {
+function escape(url: string) {
   return url.replace(/([.*+?^${}()|\[\]\/\\])/g, '\\$1');
 }
 
-function urlToRegex(url: string): RegExp {
+function urlToRegex(url: string) {
   return new RegExp(`(url\\(['"]?)(${escape(url)})(['"]?\\))`, 'g');
 }
 
-function parseURLs(str: string): string[] {
+function parseURLs(str: string) {
   const result: string[] = [];
 
   str.replace(URL_REGEX, (raw, quotation, url) => {
@@ -55,45 +55,41 @@ function parseURLs(str: string): string[] {
   return result.filter((url) => !isDataUrl(url));
 }
 
-function embed(
+async function embed(
   cssString: string,
   resourceURL: string,
   baseURL: string | null,
-  options: OptionsType
-): Promise<string> {
+  options: OptionsType,
+) {
   const resolvedURL = baseURL ? resolveUrl(resourceURL, baseURL) : resourceURL;
 
-  return Promise.resolve(resolvedURL)
-    .then((url) => getBlobFromURL(url, options))
-    .then((data) => toDataURL(data!, getMimeType(resourceURL)))
-    .then((dataURL) =>
-      cssString.replace(urlToRegex(resourceURL), `$1${dataURL}$3`)
-    )
-    .then(
-      (content) => content,
-      () => resolvedURL
-    );
+  const data = await getBlobFromURL(resolvedURL, options);
+  const dataURL = toDataURL(data!, getMimeType(resourceURL));
+
+  try {
+    return cssString.replace(urlToRegex(resourceURL), `$1${dataURL}$3`);
+  } catch {
+    return resolvedURL;
+  }
 }
 
-export function shouldEmbed(string: string): boolean {
+export function shouldEmbed(string: string) {
   return string.search(URL_REGEX) !== -1;
 }
 
-export default function embedResources(
+export default async function embedResources(
   cssString: string,
   baseUrl: string | null,
-  options: Object
-): Promise<string> {
+  options: any,
+) {
   if (!shouldEmbed(cssString)) {
-    return Promise.resolve(cssString);
+    return cssString;
   }
 
-  return Promise.resolve(cssString)
-    .then(parseURLs)
-    .then((urls) =>
-      urls.reduce(
-        (done, url) => done.then((ret) => embed(ret, url, baseUrl, options)),
-        Promise.resolve(cssString)
-      )
-    );
+  const urls = parseURLs(cssString);
+
+  return urls.reduce(
+    (done, url) => done.then((ret) => embed(ret, url, baseUrl, options)),
+    Promise.resolve(cssString),
+  );
 }

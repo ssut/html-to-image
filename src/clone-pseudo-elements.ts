@@ -2,12 +2,12 @@ import { toArray, uuid } from './utils';
 
 export type PseudoType = ':before' | ':after';
 
-function formatCssText(style: CSSStyleDeclaration): string {
+function formatCssText(style: CSSStyleDeclaration) {
   const content = style.getPropertyValue('content');
   return `${style.cssText} content: ${content};`;
 }
 
-function formatCssProperties(style: CSSStyleDeclaration): string {
+function formatCssProperties(style: CSSStyleDeclaration) {
   return toArray<string>(style)
     .map((name) => {
       const value = style.getPropertyValue(name);
@@ -21,8 +21,8 @@ function formatCssProperties(style: CSSStyleDeclaration): string {
 function getPseudoElementStyle(
   className: string,
   pseudo: PseudoType,
-  style: CSSStyleDeclaration
-): Text {
+  style: CSSStyleDeclaration,
+) {
   const selector = `.${className}:${pseudo}`;
   const cssText = style.cssText
     ? formatCssText(style)
@@ -34,7 +34,7 @@ function getPseudoElementStyle(
 function clonePseudoElement(
   nativeNode: HTMLElement,
   clonedNode: HTMLElement,
-  pseudo: PseudoType
+  pseudo: PseudoType,
 ) {
   const style = window.getComputedStyle(nativeNode, pseudo);
   const content = style.getPropertyValue('content');
@@ -52,9 +52,9 @@ function clonePseudoElement(
 
 export default function clonePseudoElements(
   nativeNode: HTMLElement,
-  clonedNode: HTMLElement
+  clonedNode: HTMLElement,
 ) {
   [':before', ':after'].forEach((pseudo: PseudoType) =>
-    clonePseudoElement(nativeNode, clonedNode, pseudo)
+    clonePseudoElement(nativeNode, clonedNode, pseudo),
   );
 }

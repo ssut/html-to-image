@@ -41,56 +41,60 @@ function parseCSS(source: string) {
   return css;
 }
 
-function fetchCSS(url: string, sheet: StyleSheet): Promise<any> {
-  return fetch(url).then(
-    (res: Response) => {
-      return {
-        url,
-        cssText: res.text(),
-      };
-    },
-    (e) => {
-      console.log('RVWR - ERROR FETCHING CSS: ', e.toString());
+async function fetchCSS(url: string, sheet: StyleSheet): Promise<any> {
+  const res = await fetch(url);
+
+  try {
+    return {
+      url,
+      cssText: await res.text(),
+    };
+  } catch (e) {
+    console.warn('Failed to fetch CSS:', url, String(e));
+  }
+}
+
+async function embedFonts(data: any) {
+  const resolved = (await data.cssText) as string;
+
+  let cssText = resolved;
+
+  const regexUrlFind = /url\(["']?([^"')]+)["']?\)/g;
+  const fontLocations = cssText.match(/url\([^)]+\)/g) || [];
+  const fontLoadedPromises = fontLocations.map(async (location: string) => {
+    let url = location.replace(regexUrlFind, '$1');
+    if (!url.startsWith('https://')) {
+      const source = data.url;
+      url = new URL(url, source).href;
     }
-  );
-}
 
-function embedFonts(data: any): Promise<string> {
-  return data.cssText.then((resolved: string) => {
-    let cssText = resolved;
-    const regexUrlFind = /url\(["']?([^"')]+)["']?\)/g;
-    const fontLocations = cssText.match(/url\([^)]+\)/g) || [];
-    const fontLoadedPromises = fontLocations.map((location: string) => {
-      let url = location.replace(regexUrlFind, '$1');
-      if (!url.startsWith('https://')) {
-        const source = data.url;
-        url = new URL(url, source).href;
-      }
-      return new Promise((resolve, reject) => {
-        fetch(url)
-          .then((res: Response) => res.blob())
-          .then((blob) => {
-            const reader = new FileReader();
-            reader.addEventListener('load', (res: Event) => {
-              // Side Effect
-              cssText = cssText.replace(location, `url(${reader.result})`);
-              resolve([location, reader.result]);
-            });
-            reader.readAsDataURL(blob);
-          })
-          .catch(reject);
+    try {
+      const res = await fetch(url);
+      const blob = await res.blob();
+
+      return await new Promise(async (resolve, reject) => {
+        const reader = new FileReader();
+        reader.addEventListener('error', reject);
+        reader.addEventListener('load', (res: Event) => {
+          // Side Effect
+          cssText = cssText.replace(location, `url(${reader.result})`);
+          resolve([location, reader.result]);
+        });
+        reader.readAsDataURL(blob);
       });
-    });
-    return Promise.all(fontLoadedPromises).then(() => cssText);
+    } catch {}
   });
+
+  await Promise.all(fontLoadedPromises);
+  return cssText;
 }
 
-function getCssRules(styleSheets: CSSStyleSheet[]): Promise<CSSStyleRule[]> {
+async function getCssRules(styleSheets: CSSStyleSheet[]) {
   const ret: CSSStyleRule[] = [];
   const promises: Promise<number | void>[] = [];
 
   // First loop inlines imports
-  styleSheets.forEach((sheet) => {
+  for (const sheet of styleSheets) {
     if ('cssRules' in sheet) {
       try {
         toArray<CSSRule>(sheet.cssRules).forEach((item: CSSRule) => {
@@ -105,15 +109,16 @@ function getCssRules(styleSheets: CSSStyleSheet[]): Promise<CSSStyleRule[]> {
                   });
                 })
                 .catch((e) => {
-                  console.log('Error loading remote css', e.toString());
-                })
+                  console.warn('Error loading remote css', String(e));
+                }),
             );
           }
         });
       } catch (e) {
         const inline =
           styleSheets.find((a) => a.href === null) || document.styleSheets[0];
-        if (sheet.href != null) {
+
+        if (sheet.href !== null) {
           promises.push(
             fetchCSS(sheet.href, inline)
               .then(embedFonts)
@@ -122,88 +127,83 @@ function getCssRules(styleSheets: CSSStyleSheet[]): Promise<CSSStyleRule[]> {
                 parsed.forEach((rule: any) => {
                   (inline as CSSStyleSheet).insertRule(
                     rule,
-                    sheet.cssRules.length
+                    sheet.cssRules.length,
                   );
                 });
               })
               .catch((e) => {
-                console.warn('Error loading remote stylesheet', e.toString());
-              })
+                console.warn('Error loading remote stylesheet', String(e));
+              }),
           );
         }
-        console.warn('Error inlining remote css file', e.toString());
+        console.warn('Error inlining remote css file', String(e));
       }
     }
-  });
+  }
 
-  return Promise.all(promises).then(() => {
-    // Second loop parses rules
-    styleSheets.forEach((sheet) => {
-      if ('cssRules' in sheet) {
-        try {
-          toArray<CSSStyleRule>(sheet.cssRules).forEach(
-            (item: CSSStyleRule) => {
-              ret.push(item);
-            }
-          );
-        } catch (e) {
-          console.warn(
-            `Error while reading CSS rules from ${sheet.href}`,
-            e.toString()
-          );
-        }
+  await Promise.all(promises);
+
+  for (const sheet of styleSheets) {
+    if ('cssRules' in sheet) {
+      try {
+        toArray<CSSStyleRule>(sheet.cssRules).forEach((item: CSSStyleRule) => {
+          ret.push(item);
+        });
+      } catch (e) {
+        console.warn(
+          `Error while reading CSS rules from ${sheet.href}`,
+          String(e),
+        );
       }
-    });
+    }
+  }
 
-    return ret;
-  });
+  return ret;
 }
 
-function getWebFontRules(cssRules: CSSStyleRule[]): CSSStyleRule[] {
+function getWebFontRules(cssRules: CSSStyleRule[]) {
   return cssRules
     .filter((rule) => rule.type === CSSRule.FONT_FACE_RULE)
     .filter((rule) => shouldEmbed(rule.style.getPropertyValue('src')));
 }
 
-export function parseWebFontRules(clonedNode: HTMLElement): Promise<CSSRule[]> {
-  return new Promise((resolve, reject) => {
-    if (!clonedNode.ownerDocument) {
-      reject(new Error('Provided element is not within a Document'));
-    }
-    resolve(toArray(clonedNode.ownerDocument!.styleSheets));
-  })
-    .then(getCssRules)
-    .then(getWebFontRules);
+export async function parseWebFontRules(clonedNode: HTMLElement) {
+  if (!clonedNode.ownerDocument) {
+    throw new Error('Provided element is not within a Document');
+  }
+
+  const styleSheets = toArray(clonedNode.ownerDocument.styleSheets);
+  const cssRules = await getCssRules(styleSheets);
+  const webFontRules = await getWebFontRules(cssRules);
+
+  return webFontRules;
 }
 
-export default function embedWebFonts(
+export default async function embedWebFonts(
   clonedNode: HTMLElement,
-  options: Object
-): Promise<HTMLElement> {
-  return parseWebFontRules(clonedNode)
-    .then((rules) =>
-      Promise.all(
-        rules.map((rule) => {
-          const baseUrl = rule.parentStyleSheet
-            ? rule.parentStyleSheet.href
-            : null;
-          return embedResources(rule.cssText, baseUrl, options);
-        })
-      )
-    )
-    .then((cssStrings) => cssStrings.join('\n'))
-    .then((cssString) => {
-      const styleNode = document.createElement('style');
-      const sytleContent = document.createTextNode(cssString);
+  options: any,
+) {
+  const rules = await parseWebFontRules(clonedNode);
+  const cssStrings = await Promise.all(
+    rules.map((rule) => {
+      const baseUrl = rule.parentStyleSheet ? rule.parentStyleSheet.href : null;
 
-      styleNode.appendChild(sytleContent);
+      return embedResources(rule.cssText, baseUrl, options);
+    }),
+  );
 
-      if (clonedNode.firstChild) {
-        clonedNode.insertBefore(styleNode, clonedNode.firstChild);
-      } else {
-        clonedNode.appendChild(styleNode);
-      }
+  const cssString = cssStrings.join('\n');
 
-      return clonedNode;
-    });
+  const styleNode = document.createElement('style');
+  const sytleContent = document.createTextNode(cssString);
+
+  styleNode.appendChild(sytleContent);
+
+  if (clonedNode.firstChild) {
+    clonedNode.insertBefore(styleNode, clonedNode.firstChild);
+  } else {
+    clonedNode.appendChild(styleNode);
+  }
+
+  return clonedNode;
 }
