@@ -42,12 +42,12 @@ function parseCSS(source:string) {
 }
 
 function fetchCSS(url: string, sheet: StyleSheet): Promise<any> {
-  return fetch(`${url}?v1=1`).then((res: Response) => {
+  return fetch(url).then((res: Response) => {
     return {
       url,
       cssText:res.text(),
     }
-  },                               (e) => {
+  },                     (e) => {
     console.log('RVWR - ERROR FETCHING CSS: ', e.toString())
   })
 }
@@ -64,7 +64,7 @@ function embedFonts(data: any): Promise<string> {
         url = new URL(url, source).href
       }
       return new Promise((resolve, reject) => {
-        fetch(`${url}?v1=1`)
+        fetch(url)
           .then((res: Response) => res.blob())
           .then((blob) => {
             const reader = new FileReader()
@@ -118,10 +118,10 @@ function getCssRules(styleSheets: CSSStyleSheet[]): Promise<CSSStyleRule[]> {
               })
             })
             .catch((e) => {
-              console.log('Error loading remote stylesheet', e.toString())
+              console.warn('Error loading remote stylesheet', e.toString())
             }))
         }
-        console.log('Error inlining remote css file', e.toString())
+        console.warn('Error inlining remote css file', e.toString())
       }
     }
   })
@@ -138,7 +138,7 @@ function getCssRules(styleSheets: CSSStyleSheet[]): Promise<CSSStyleRule[]> {
               ret.push(item)
             })
           } catch (e) {
-            console.log(`Error while reading CSS rules from ${sheet.href}`, e.toString())
+            console.warn(`Error while reading CSS rules from ${sheet.href}`, e.toString())
           }
         }
       })

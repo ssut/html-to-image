@@ -58,8 +58,11 @@ export function toSvgDataURL(
 
   return cloneNode(domNode, options.filter, true)
     .then(clonedNode => embedWebFonts(clonedNode!, options))
+    .then((x: any) => { console.info('embedded web fonts'); return x })
     .then(clonedNode => embedImages(clonedNode, options))
+    .then((x: any) => { console.info('embedded images'); return x })
     .then(clonedNode => applyStyleWithOptions(clonedNode, options))
+    .then((x: any) => { console.info('embedded styles'); return x })
     .then(clonedNode => createSvgDataURL(clonedNode, width, height))
 }
 

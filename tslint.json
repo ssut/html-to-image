@@ -8,9 +8,5 @@
   },
   "rules": {
     "import-name": false,
-    "semicolon": [
-      true,
-      "never"
-    ]
   }
 }

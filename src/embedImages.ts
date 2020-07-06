@@ -25,45 +25,73 @@ function embedBackground(
     })
 }
 
-function embedImageNode(
+async function embedImageNode(
   clonedNode: HTMLElement,
   options: OptionsType,
 ): Promise<HTMLElement> {
   if (!(clonedNode instanceof HTMLImageElement) || isDataUrl(clonedNode.src)) {
-    return Promise.resolve(clonedNode)
+    return clonedNode;
   }
 
-  return Promise.resolve(clonedNode.src)
-    .then(url => getBlobFromURL(url, options))
-    .then(data => toDataURL(data!, getMimeType(clonedNode.src)))
-    .then(dataURL => new Promise(((resolve, reject) => {
-      clonedNode.onload = resolve
-      clonedNode.onerror = reject
-      clonedNode.src = dataURL
-    })))
-    .then(() => clonedNode, () => clonedNode)
+  const data = await getBlobFromURL(clonedNode.currentSrc, options);
+  const dataURL = toDataURL(data!, getMimeType(clonedNode.currentSrc));
+  const node = await new Promise<HTMLElement>((resolve, reject) => {
+    clonedNode.addEventListener('load', () => resolve(clonedNode));
+    clonedNode.addEventListener('abort', reject);
+    clonedNode.addEventListener('error', reject);
+
+    clonedNode.src = dataURL;
+  });
+
+  return node;
 }
 
-function embedChildren(
+const a = {
+  total: 0,
+  count: 0,
+}
+
+async function embedChildren(
   clonedNode: HTMLElement,
   options: Object,
 ): Promise<HTMLElement> {
   const children = toArray<HTMLElement>(clonedNode.childNodes)
+
+  // let resp: any;
+  // for (const a of children) {
+  //   console.info(a);
+  //   await embedImages(a, options);
+  //   console.info(a, 'DONE');
+  // }
+
+
   const deferreds = children.map(child => embedImages(child, options))
 
-  return Promise.all(deferreds).then(() => clonedNode)
+  // a.total += 1
+  // console.info(a.count, a.total)
+  const resp = await Promise.all(deferreds).then(() => clonedNode)
+  // a.count += 1
+
+  console.info(a.count, a.total)
+
+  return resp
 }
 
-export default function embedImages(
+export default async function embedImages(
   clonedNode: HTMLElement,
   options: Object,
 ): Promise<HTMLElement> {
   if (!(clonedNode instanceof Element)) {
-    return Promise.resolve(clonedNode)
+    return clonedNode;
   }
 
-  return Promise.resolve(clonedNode)
-    .then(node => embedBackground(node, options))
-    .then(node => embedImageNode(node, options))
-    .then(node => embedChildren(node, options))
+  if (clonedNode.hasAttribute('srcset')) {
+    clonedNode.removeAttribute('srcset');
+  }
+
+  let node = await embedBackground(clonedNode, options);
+  node = await embedImageNode(node, options);
+  node = await embedChildren(node, options);
+
+  return node;
 }
