@@ -1,7 +1,7 @@
 /* tslint:disable:max-line-length */
 
-import { getDataURLContent } from './utils'
-import { OptionsType } from './index'
+import { getDataURLContent } from './utils';
+import { OptionsType } from './index';
 
 // KNOWN ISSUE
 // -----------
@@ -15,11 +15,11 @@ export default async function getBlobFromURL(
   // cache bypass so we dont have CORS issues with cached images
   // ref: https://developer.mozilla.org/en/docs/Web/API/XMLHttpRequest/Using_XMLHttpRequest#Bypassing_the_cache
   if (options.cacheBust) {
-    url += (/\?/.test(url) ? "&" : "?") + new Date().getTime(); // tslint:disable-line
+    url += (/\?/.test(url) ? '&' : '?') + new Date().getTime(); // tslint:disable-line
   }
 
   const failed = (reason: any) => {
-    let placeholder = "";
+    let placeholder = '';
     if (options.imagePlaceholder) {
       const split = options.imagePlaceholder.split(/,/);
       if (split && split[1]) {
@@ -30,7 +30,7 @@ export default async function getBlobFromURL(
     let msg = `Failed to fetch resource: ${url}`;
 
     if (reason) {
-      msg = typeof reason === "string" ? reason : reason.message;
+      msg = typeof reason === 'string' ? reason : reason.message;
     }
 
     if (msg) {
@@ -43,9 +43,9 @@ export default async function getBlobFromURL(
   try {
     const resp = await window.fetch(`${url}?${Date.now()}`, {
       method: 'GET',
-      mode: "cors",
-      credentials: "omit",
-      cache: "no-cache",
+      mode: 'cors',
+      credentials: 'omit',
+      cache: 'no-cache',
     });
 
     const blob = await resp.blob();
@@ -55,7 +55,11 @@ export default async function getBlobFromURL(
 
       reader.addEventListener('error', reject);
       reader.addEventListener('abort', reject);
-      reader.addEventListener('load', () => resolve(reader.result as string), false);
+      reader.addEventListener(
+        'load',
+        () => resolve(reader.result as string),
+        false
+      );
 
       reader.readAsDataURL(blob);
     });
