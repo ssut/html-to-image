@@ -85,7 +85,7 @@ function toBlob(canvas: HTMLCanvasElement): Promise<Blob> {
     resolve(
       new Blob([binaryArray], {
         type: 'image/png',
-      })
+      }),
     );
   });
 }
